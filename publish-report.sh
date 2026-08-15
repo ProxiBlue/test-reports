@@ -8,7 +8,7 @@
 #
 # Arguments:
 #   site-name    — identifier for this project (e.g. "lcd", "client-store")
-#   report-dir   — path to test-results dir containing hyva-*-reports/
+#   report-dir   — path to test-results dir containing one or more *-reports/ dirs (any prefix)
 #   project-dir  — path to project git repo (for branch check + commit ref)
 #   commit-ref   — optional, auto-detected from project-dir if omitted
 #
@@ -46,13 +46,13 @@ fi
 # --- Gate 2: All tests must pass ---
 HAS_FAILURES=0
 REPORT_COUNT=0
-for json_report in "$REPORT_DIR"/hyva-*-reports/json-reports/json-report.json; do
+for json_report in "$REPORT_DIR"/*-reports/json-reports/json-report.json; do
     [ -f "$json_report" ] || continue
     REPORT_COUNT=$((REPORT_COUNT + 1))
     failed=$(jq '[.suites[]?.specs[]?.tests[]? | select(.status == "unexpected" or .status == "failed")] | length' "$json_report" 2>/dev/null || echo 0)
     if [ "$failed" -gt 0 ]; then
         HAS_FAILURES=1
-        suite_name=$(basename "$(dirname "$(dirname "$json_report")")" | sed 's/^hyva-//;s/-reports$//')
+        suite_name=$(basename "$(dirname "$(dirname "$json_report")")" | sed 's/-reports$//')
         echo "FAIL: ${suite_name} has ${failed} failed test(s)"
     fi
 done
@@ -81,11 +81,11 @@ git pull --rebase origin main 2>/dev/null || true
 SUITES=()
 TOTAL_PASSED=0
 
-for suite_dir in "$REPORT_DIR"/hyva-*-reports/playwright-report; do
+for suite_dir in "$REPORT_DIR"/*-reports/playwright-report; do
     [ -d "$suite_dir" ] || continue
 
     # Extract suite name: hyva-admin-reports -> admin
-    suite_name=$(basename "$(dirname "$suite_dir")" | sed 's/^hyva-//;s/-reports$//')
+    suite_name=$(basename "$(dirname "$suite_dir")" | sed 's/-reports$//')
     SUITES+=("$suite_name")
 
     # Create target directory
